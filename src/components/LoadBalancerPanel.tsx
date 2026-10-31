@@ -16,7 +16,9 @@ import {
   Leaf,
   ChevronRight,
   MapPin,
-  Zap
+  Zap,
+  Activity,
+  Layers
 } from 'lucide-react';
 import { RURAL_LISTINGS } from '../data/mockData';
 
@@ -41,9 +43,8 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
 }) => {
   const [advisoryDeployed, setAdvisoryDeployed] = useState(false);
   const [advisoryMsg, setAdvisoryMsg] = useState<string | null>(null);
-  const [flowStep, setFlowStep] = useState(0); // animates redistribution flow
+  const [flowStep, setFlowStep] = useState(0);
 
-  // Animate flow on load / hotspot change
   useEffect(() => {
     setAdvisoryDeployed(false);
     setAdvisoryMsg(null);
@@ -62,7 +63,6 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
     );
   };
 
-  // Congestion-level derived values
   const congestionColor =
     selectedHotspot.saturationPct >= 90 ? 'text-red-400' :
     selectedHotspot.saturationPct >= 70 ? 'text-amber-400' : 'text-emerald-400';
@@ -75,16 +75,13 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
     selectedHotspot.saturationPct >= 90 ? 'border-red-900/50' :
     selectedHotspot.saturationPct >= 70 ? 'border-amber-900/50' : 'border-emerald-900/50';
 
-  // Build redistribution flow chain: hotspot → alts (max 4 nodes)
   const flowNodes: string[] = [selectedHotspot.name, ...alternatives.slice(0, 3).map(a => a.name)];
 
-  // Featured local experience: first listing matching this hotspot's name (partial match)
   const featuredListing = RURAL_LISTINGS.find(l =>
     alternatives.some(a => l.nearestHotspot.toLowerCase().includes(a.name.toLowerCase().split(' ')[0]) ||
       a.name.toLowerCase().includes(l.nearestHotspot.toLowerCase().split(' ')[0]))
   ) || RURAL_LISTINGS[0];
 
-  // Per-alternative computed congestion reduction %
   const getCongestionReduction = (alt: Destination) => {
     const overcapacity = selectedHotspot.currentVisitors - selectedHotspot.carryingCapacity;
     const divertable = alt.carryingCapacity - alt.currentVisitors;
@@ -107,20 +104,60 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
         <div className="flex items-center space-x-1.5">
           <Radio className="w-3.5 h-3.5 text-emerald-500" />
           <h2 className="text-xs font-bold text-white uppercase tracking-wider">
-            Tourism Redistribution
+            2. Tourism Load Balancer
           </h2>
         </div>
         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/60">
-          AI ACTIVE
+          ALGORITHM ACTIVE
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3.5">
 
-        {/* ── SECTION 1: Requested Destination Status ── */}
+        {/* ── 1. CAUSE → ACTION → EFFECT FLOW HIGHLIGHT (Visual Logic Chain) ── */}
+        <div className="p-2.5 rounded bg-[#0b1426] border border-[#203254] space-y-2">
+          <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider flex items-center justify-between">
+            <span>Redistribution Mechanism</span>
+            <span className="text-emerald-400 font-bold">AUTONOMOUS</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-1.5 text-center text-xs">
+            {/* Step 1: CAUSE */}
+            <div className="p-2 rounded bg-red-950/20 border border-red-900/40 flex flex-col justify-between">
+              <span className="text-[9px] font-mono text-red-400 font-bold uppercase">1. CAUSE</span>
+              <div className="my-1">
+                <span className="text-white font-bold block truncate">{selectedHotspot.name}</span>
+                <span className="text-[10px] text-red-300 font-mono font-semibold">{selectedHotspot.saturationPct}% Saturated</span>
+              </div>
+              <span className="text-[8px] text-slate-400">Infra failure risk</span>
+            </div>
+
+            {/* Step 2: ACTION */}
+            <div className="p-2 rounded bg-blue-950/20 border border-blue-900/40 flex flex-col justify-between">
+              <span className="text-[9px] font-mono text-blue-400 font-bold uppercase">2. ACTION</span>
+              <div className="my-1">
+                <span className="text-white font-bold block truncate">AI Diversion</span>
+                <span className="text-[10px] text-blue-300 font-mono font-semibold">Corridor Shift</span>
+              </div>
+              <span className="text-[8px] text-slate-400">VMS &amp; transit inc.</span>
+            </div>
+
+            {/* Step 3: EFFECT */}
+            <div className="p-2 rounded bg-emerald-950/20 border border-emerald-900/40 flex flex-col justify-between">
+              <span className="text-[9px] font-mono text-emerald-400 font-bold uppercase">3. EFFECT</span>
+              <div className="my-1">
+                <span className="text-emerald-400 font-bold block">-34% Congestion</span>
+                <span className="text-[10px] text-emerald-300 font-mono font-semibold">+₹18.4L Rural</span>
+              </div>
+              <span className="text-[8px] text-slate-400">Ecology relieved</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 2. REQUESTED DESTINATION STATUS ── */}
         <div>
           <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1.5">
-            Requested Destination
+            Requested Destination Telemetry
           </div>
 
           {/* Hotspot selector */}
@@ -167,7 +204,7 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
               </div>
               <div className="flex justify-between text-[9px] text-slate-500 mt-0.5 font-mono">
                 <span>Threshold: 75%</span>
-                <span>Capacity Ceiling: {formatNumber(selectedHotspot.carryingCapacity)}</span>
+                <span>Ceiling: {formatNumber(selectedHotspot.carryingCapacity)}</span>
               </div>
             </div>
 
@@ -189,14 +226,14 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
           </div>
         </div>
 
-        {/* ── SECTION 2: Tourism Pressure Flow Map ── */}
+        {/* ── 3. TOURISM PRESSURE FLOW CHAIN ── */}
         <div>
           <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1.5">
-            Redistribution Flow
+            Tourism Pressure Map &amp; Redistribution Flow
           </div>
           <div className="bg-[#0f182c] border border-[#1c2b47] rounded p-3">
             <div className="text-[10px] text-slate-400 mb-2 font-mono">
-              AI-Recommended Diversion Chain · {selectedHotspot.circuit}
+              Dynamic Diversion Corridors · {selectedHotspot.circuit}
             </div>
             <div className="space-y-0">
               {flowNodes.map((nodeName, idx) => {
@@ -246,7 +283,7 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
                         <div className="w-px h-3 bg-[#223354] mx-[3.5px]" />
                         <ArrowDown className="w-2.5 h-2.5 text-slate-500 -ml-[3.5px]" />
                         <span className="text-[9px] text-slate-500 ml-2 font-mono">
-                          {alternatives[idx]?.distanceDeltaKm ?? ''}km detour · {alternatives[idx]?.travelTimeDeltaMins ?? ''}min scenic
+                          {alternatives[idx]?.distanceDeltaKm ?? ''}km detour · {alternatives[idx]?.travelTimeDeltaMins ?? ''}min scenic flow
                         </span>
                       </div>
                     )}
@@ -257,7 +294,7 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
           </div>
         </div>
 
-        {/* ── SECTION 3: AI Recommended Alternatives ── */}
+        {/* ── 4. AI RECOMMENDED ALTERNATIVES ── */}
         <div>
           <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1.5">
             AI Recommended Alternatives
@@ -301,7 +338,7 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* Redistribution metrics — NOT booking info */}
+                  {/* Redistribution metrics */}
                   <div className="px-3 py-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                     <div className="flex items-center space-x-1.5">
                       <TrendingDown className="w-3 h-3 text-emerald-400 flex-shrink-0" />
@@ -347,31 +384,29 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
           </div>
         </div>
 
-        {/* ── SECTION 4: Featured Local Experience (single, not a grid) ── */}
+        {/* ── 5. FEATURED LOCAL SATELLITE (Single Node Example) ── */}
         <div>
           <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1.5">
-            Featured Local Experience
+            Featured Rural Satellite Node
           </div>
           <div className="rounded border border-[#1c2b47] overflow-hidden bg-[#0f182c]">
-            {/* Large image strip */}
             <div
-              className="h-28 w-full bg-cover bg-center relative"
+              className="h-24 w-full bg-cover bg-center relative"
               style={{ backgroundImage: `url(${featuredListing.imageUrl})` }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0f182c]/90 via-[#0f182c]/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0f182c]/90 via-[#0f182c]/40 to-transparent" />
               <div className="absolute inset-0 p-3 flex flex-col justify-end">
                 <div className="text-[9px] font-mono text-emerald-400 uppercase tracking-wider">
                   {featuredListing.category} · {featuredListing.village}
                 </div>
-                <div className="text-sm font-bold text-white leading-snug mt-0.5">
+                <div className="text-sm font-bold text-white leading-snug mt-0.5 truncate">
                   {featuredListing.title}
                 </div>
-                <div className="text-[10px] text-slate-300 mt-0.5 leading-tight">
-                  {featuredListing.description.slice(0, 80)}…
+                <div className="text-[10px] text-slate-300 mt-0.5 truncate">
+                  {featuredListing.description}
                 </div>
               </div>
             </div>
-            {/* Info row */}
             <div className="px-3 py-2 flex items-center justify-between border-t border-[#1c2b47]">
               <div className="flex items-center space-x-3 text-[10px] text-slate-400">
                 <span className="font-mono font-bold text-emerald-400">
@@ -380,20 +415,20 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
                 {featuredListing.verifiedGI && (
                   <span className="text-amber-400 font-semibold">GI Certified</span>
                 )}
-                <span>{featuredListing.directHostSharePct}% to host</span>
+                <span>{featuredListing.directHostSharePct}% direct host payout</span>
               </div>
               <button
                 onClick={onOpenRuralDiscovery}
                 className="text-[10px] font-semibold text-emerald-300 hover:text-white flex items-center space-x-0.5"
               >
-                <span>See all</span>
+                <span>Satellite Directory</span>
                 <ChevronRight className="w-3 h-3" />
               </button>
             </div>
           </div>
         </div>
 
-        {/* ── SECTION 5: Deploy Advisory Action ── */}
+        {/* ── 6. DEPLOY ADVISORY ACTION ── */}
         <div>
           <button
             onClick={handleDeploy}
@@ -405,8 +440,8 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
             }`}
           >
             {advisoryDeployed
-              ? <><CheckCircle2 className="w-3.5 h-3.5" /><span>Advisory Deployed on Highway Signboards</span></>
-              : <><Zap className="w-3.5 h-3.5" /><span>Deploy Diversion Advisory to VMS & Navigation</span></>
+              ? <><CheckCircle2 className="w-3.5 h-3.5" /><span>Advisory Deployed to Highway Signboards</span></>
+              : <><Zap className="w-3.5 h-3.5" /><span>Deploy Diversion Advisory to VMS &amp; Navigation</span></>
             }
           </button>
           {advisoryMsg && (

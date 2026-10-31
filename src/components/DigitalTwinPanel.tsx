@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Destination } from '../types';
 import { formatNumber } from '../lib/utils';
 import { 
@@ -13,7 +13,13 @@ import {
   MapPin, 
   Compass,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Activity,
+  ShieldAlert,
+  ArrowUpRight,
+  TrendingDown,
+  Building,
+  CheckCircle2
 } from 'lucide-react';
 
 interface DigitalTwinPanelProps {
@@ -29,6 +35,23 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
   setTimeOffsetHours,
   onSetAsHotspotToBalance
 }) => {
+  // Live pulse tickers simulation
+  const [pulseIndex, setPulseIndex] = useState(0);
+
+  const pulseEvents = [
+    { text: `+547 tourists entered ${destination.name}`, tag: 'INFLOW', color: 'text-amber-400' },
+    { text: '+1,283 redistributed today via NH corridors', tag: 'DIVERSION', color: 'text-emerald-400' },
+    { text: 'Narkanda & satellites reaching optimal utilization', tag: 'CAPACITY', color: 'text-blue-400' },
+    { text: 'Traffic pressure rising along gateway choke points', tag: 'TELEMETRY', color: 'text-red-400' }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPulseIndex((prev) => (prev + 1) % pulseEvents.length);
+    }, 3800);
+    return () => clearInterval(interval);
+  }, [pulseEvents.length]);
+
   // Compute time adjusted saturation
   const adjustedSaturation = timeOffsetHours === 0 
     ? destination.saturationPct 
@@ -45,17 +68,16 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
 
   const statusColor = isOverloaded ? 'text-red-400' : isModerate ? 'text-amber-400' : 'text-emerald-400';
   const statusBg = isOverloaded ? 'bg-red-500' : isModerate ? 'bg-amber-500' : 'bg-emerald-500';
-  const statusBorder = isOverloaded ? 'border-red-900/50' : isModerate ? 'border-amber-900/50' : 'border-emerald-900/50';
 
   // Infrastructure load calculations
-  const waterSupplyCapacityMLD = (destination.carryingCapacity * 0.00018).toFixed(1); // Standard 180L per capita municipal norm
+  const waterSupplyCapacityMLD = (destination.carryingCapacity * 0.00018).toFixed(1);
   const waterDeficit = parseFloat((destination.waterDemandMLD - parseFloat(waterSupplyCapacityMLD)).toFixed(1));
   const hasWaterDeficit = destination.isHotspot && waterDeficit > 0;
 
   return (
     <div className="h-full flex flex-col bg-[#131f37] border border-[#223354] rounded-lg text-slate-200 overflow-hidden">
       {/* Panel Header */}
-      <div className="px-3.5 py-2.5 bg-[#0f182c] border-b border-[#223354] flex items-center justify-between">
+      <div className="px-3.5 py-2.5 bg-[#0f182c] border-b border-[#223354] flex items-center justify-between flex-shrink-0">
         <div className="flex items-center space-x-1.5">
           <Layers className="w-4 h-4 text-emerald-500" />
           <h2 className="text-xs font-bold text-white uppercase tracking-wider">
@@ -67,8 +89,62 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
         </span>
       </div>
 
-      <div className="p-3.5 space-y-4 overflow-y-auto flex-1">
-        {/* Destination Header Card */}
+      <div className="p-3.5 space-y-3.5 overflow-y-auto flex-1">
+
+        {/* ── 1. LIVE TOURISM PULSE (Ticker) ── */}
+        <div className="p-2.5 rounded bg-[#0a1222] border border-[#1e2f52] flex items-center justify-between">
+          <div className="flex items-center space-x-2 overflow-hidden">
+            <span className="relative flex h-2 w-2 flex-shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider flex-shrink-0">
+              PULSE:
+            </div>
+            <div className={`text-xs font-semibold truncate ${pulseEvents[pulseIndex].color}`}>
+              {pulseEvents[pulseIndex].text}
+            </div>
+          </div>
+          <span className="text-[9px] font-mono text-slate-500 uppercase px-1.5 py-0.5 rounded bg-[#131f37] border border-[#223354] flex-shrink-0">
+            {pulseEvents[pulseIndex].tag}
+          </span>
+        </div>
+
+        {/* ── 2. SYSTEM ALERTS PANEL (Predictive Early Warning) ── */}
+        {destination.isHotspot ? (
+          <div className="p-3 rounded bg-red-950/30 border border-red-900/50 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-1.5 text-red-400 font-mono text-xs font-bold uppercase">
+                <ShieldAlert className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+                <span>SYSTEM WARNING · CHOKE POINT RISK</span>
+              </div>
+              <span className="text-[9px] font-mono text-red-400/80 bg-red-950 px-1 rounded border border-red-800/40">
+                T+3H PREDICTION
+              </span>
+            </div>
+            <p className="text-xs text-red-200 font-medium leading-relaxed">
+              <strong>{destination.name} Saturation</strong> predicted to exceed <span className="text-red-400 font-bold font-mono">98%</span> within 3 hours. Municipal water deficit and Cart Road bottleneck imminent.
+            </p>
+            <div className="pt-1.5 border-t border-red-900/30 flex items-start space-x-1.5 text-[11px] text-slate-300">
+              <span className="text-emerald-400 font-mono font-bold uppercase flex-shrink-0">RECOMMENDATION:</span>
+              <span className="text-slate-300">
+                Throttle inbound highway access. Increase dynamic routing &amp; transit incentives towards satellite corridor.
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="p-2.5 rounded bg-emerald-950/20 border border-emerald-900/40 flex items-center justify-between text-xs">
+            <div className="flex items-center space-x-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-emerald-300 font-medium">Eco-Buffer Satellite Active</span>
+            </div>
+            <span className="text-[10px] font-mono text-emerald-400 font-bold">
+              {destination.carryingCapacity - destination.currentVisitors} capacity remaining
+            </span>
+          </div>
+        )}
+
+        {/* ── 3. DESTINATION TELEMETRY HEADER ── */}
         <div className="p-2.5 rounded bg-[#0f182c] border border-[#1c2b47]">
           <div className="flex items-start justify-between">
             <div>
@@ -90,7 +166,7 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
           </p>
         </div>
 
-        {/* Saturation Gauge & Progress */}
+        {/* ── 4. CARRYING CAPACITY SATURATION GAUGE ── */}
         <div className="p-3 rounded bg-[#0f182c] border border-[#1c2b47] space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-slate-400 uppercase font-mono">
@@ -115,7 +191,7 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
           </div>
         </div>
 
-        {/* Visitor Estimates: Current vs Carrying Capacity */}
+        {/* ── 5. VISITOR INFLOW VS CARRYING CAPACITY ── */}
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="p-2.5 rounded bg-[#0f182c] border border-[#1c2b47]">
             <span className="text-[10px] text-slate-400 font-mono block">Estimated Daily Inflow</span>
@@ -134,8 +210,8 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
           </div>
         </div>
 
-        {/* Infrastructure Load Stress */}
-        <div className="p-3 rounded bg-[#0f182c] border border-[#1c2b47] space-y-2.5">
+        {/* ── 6. INFRASTRUCTURE LOAD DIAGNOSTICS ── */}
+        <div className="p-3 rounded bg-[#0f182c] border border-[#1c2b47] space-y-2">
           <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider block">
             Infrastructure Load Diagnostics
           </span>
@@ -177,7 +253,43 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
           </div>
         </div>
 
-        {/* 3-Hour Predictive Demand Scrubber */}
+        {/* ── 7. REDISTRIBUTION SUMMARY (Macro Impact Telemetry) ── */}
+        <div className="p-3 rounded bg-[#0b1426] border border-[#203254] space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+              National Redistribution Summary
+            </span>
+            <span className="text-[9px] font-mono text-emerald-400">TODAY CUMULATIVE</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-2 rounded bg-[#0f182c] border border-[#1c2b47]">
+              <span className="text-[10px] text-slate-400 block font-mono">Tourists Redirected</span>
+              <strong className="text-sm font-bold text-emerald-400 font-mono">14,523</strong>
+              <span className="text-[9px] text-slate-500 block">from choke corridors</span>
+            </div>
+
+            <div className="p-2 rounded bg-[#0f182c] border border-[#1c2b47]">
+              <span className="text-[10px] text-slate-400 block font-mono">Revenue Generated</span>
+              <strong className="text-sm font-bold text-amber-300 font-mono">₹18.4 Lakhs</strong>
+              <span className="text-[9px] text-slate-500 block">injected into rural clusters</span>
+            </div>
+
+            <div className="p-2 rounded bg-[#0f182c] border border-[#1c2b47]">
+              <span className="text-[10px] text-slate-400 block font-mono">Congestion Reduction</span>
+              <strong className="text-sm font-bold text-blue-400 font-mono">34%</strong>
+              <span className="text-[9px] text-slate-500 block">at peak choke points</span>
+            </div>
+
+            <div className="p-2 rounded bg-[#0f182c] border border-[#1c2b47]">
+              <span className="text-[10px] text-slate-400 block font-mono">Rural Destinations Benefited</span>
+              <strong className="text-sm font-bold text-purple-300 font-mono">127</strong>
+              <span className="text-[9px] text-slate-500 block">active satellite hubs</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 8. 3-HOUR PREDICTIVE DEMAND SIMULATION ── */}
         <div className="p-3 rounded bg-[#0f182c] border border-[#1c2b47] space-y-2">
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-slate-300 font-semibold flex items-center">
