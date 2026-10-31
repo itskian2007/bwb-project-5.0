@@ -51,16 +51,16 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
   const waterRelievedMLD = 0.4;
 
   return (
-    <div className="h-full flex flex-col bg-[#0E1A38] border border-[#1E2F5B] rounded-lg text-slate-200 overflow-hidden">
+    <div className="h-full flex flex-col bg-[#131f37] border border-[#223354] rounded-lg text-slate-200 overflow-hidden">
       {/* Panel Header */}
-      <div className="px-3.5 py-2.5 bg-[#0B1530] border-b border-[#1E2F5B] flex items-center justify-between">
+      <div className="px-3.5 py-2.5 bg-[#0f182c] border-b border-[#223354] flex items-center justify-between">
         <div className="flex items-center space-x-1.5">
-          <Compass className="w-4 h-4 text-emerald-400" />
+          <Compass className="w-4 h-4 text-emerald-500" />
           <h2 className="text-xs font-bold text-white uppercase tracking-wider">
             2. Tourism Load Balancer
           </h2>
         </div>
-        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800">
           ALGORITHM ACTIVE
         </span>
       </div>
@@ -81,7 +81,7 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
                 setAdvisoryFeedback(null);
               }
             }}
-            className="w-full bg-[#0A142D] border border-[#1E2F5B] rounded px-2.5 py-1.5 text-xs text-white font-medium focus:outline-none focus:border-emerald-500"
+            className="w-full bg-[#0f182c] border border-[#223354] rounded px-2.5 py-1.5 text-xs text-white font-medium focus:outline-none focus:border-emerald-600"
           >
             {hotspots.map(h => (
               <option key={h.id} value={h.id}>
@@ -92,7 +92,7 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
         </div>
 
         {/* Selected Hotspot Overview */}
-        <div className="p-2.5 rounded bg-[#0A142D] border border-red-900/30 text-xs space-y-1.5">
+        <div className="p-2.5 rounded bg-[#0f182c] border border-red-900/40 text-xs space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="font-bold text-white">{selectedHotspot.name} Crisis Telemetry</span>
             <span className="font-mono text-red-400 font-bold">{selectedHotspot.saturationPct}% Saturated</span>
@@ -131,8 +131,8 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
                   }}
                   className={`w-full text-left p-2 rounded border transition-all text-xs flex items-center justify-between ${
                     isSelected
-                      ? 'bg-[#15803D]/20 border-emerald-500 text-white'
-                      : 'bg-[#0A142D] border-[#1E2F5B] text-slate-300 hover:border-slate-500'
+                      ? 'bg-[#15803d]/25 border-emerald-500 text-white'
+                      : 'bg-[#0f182c] border-[#223354] text-slate-300 hover:border-slate-500'
                   }`}
                 >
                   <div>
@@ -158,13 +158,13 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
         </div>
 
         {/* Step 3: Estimated Redirection Benefits */}
-        <div className="p-3 rounded bg-[#0A142D] border border-[#1A2B52] space-y-2">
+        <div className="p-3 rounded bg-[#0f182c] border border-[#1c2b47] space-y-2">
           <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
             Calculated Redistribution Benefits
           </span>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="p-2 rounded bg-[#070D1E] border border-[#162347]">
+            <div className="p-2 rounded bg-[#0d1527] border border-[#1c2b47]">
               <span className="text-slate-400 text-[10px] block">Travel Time Saved</span>
               <strong className="text-sm font-bold text-emerald-400 font-mono">
                 {trafficSaved} Hours
@@ -172,7 +172,7 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
               <span className="text-[9px] text-slate-500 block">per diverted vehicle</span>
             </div>
 
-            <div className="p-2 rounded bg-[#070D1E] border border-[#162347]">
+            <div className="p-2 rounded bg-[#0d1527] border border-[#1c2b47]">
               <span className="text-slate-400 text-[10px] block">CO₂ Footprint Relieved</span>
               <strong className="text-sm font-bold text-emerald-400 font-mono">
                 {co2AvoidedKg} kg
@@ -180,15 +180,15 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
               <span className="text-[9px] text-slate-500 block">idle emissions cut</span>
             </div>
 
-            <div className="p-2 rounded bg-[#070D1E] border border-[#162347]">
+            <div className="p-2 rounded bg-[#0d1527] border border-[#1c2b47]">
               <span className="text-slate-400 text-[10px] block">Hotspot Water Relieved</span>
-              <strong className="text-sm font-bold text-cyan-400 font-mono">
+              <strong className="text-sm font-bold text-blue-400 font-mono">
                 {waterRelievedMLD} MLD
               </strong>
               <span className="text-[9px] text-slate-500 block">municipal buffer</span>
             </div>
 
-            <div className="p-2 rounded bg-[#070D1E] border border-[#162347]">
+            <div className="p-2 rounded bg-[#0d1527] border border-[#1c2b47]">
               <span className="text-slate-400 text-[10px] block">Rural Economic Injection</span>
               <strong className="text-sm font-bold text-amber-300 font-mono">
                 {formatINR(moneyRedirected)}
@@ -205,12 +205,12 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
             disabled={advisoryActive}
             className={`w-full py-2.5 px-3 rounded font-bold text-xs flex items-center justify-center space-x-1.5 transition-all ${
               advisoryActive
-                ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-600 cursor-default'
-                : 'bg-[#15803D] hover:bg-[#166534] text-white shadow-md'
+                ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-600 cursor-default'
+                : 'bg-[#15803d] hover:bg-[#166534] text-white shadow-md'
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>{advisoryActive ? 'Advisory Active on Highway Signs & Apps' : 'Deploy Traffic Advisory & Diversion'}</span>
+            <span>{advisoryActive ? 'Advisory Active on Highway Signs & Navigation Apps' : 'Deploy Traffic Advisory & Diversion'}</span>
           </button>
 
           {advisoryFeedback && (
@@ -221,26 +221,26 @@ export const LoadBalancerPanel: React.FC<LoadBalancerPanelProps> = ({
         </div>
 
         {/* Rural Community Beneficiaries Link */}
-        <div className="p-2.5 rounded bg-[#0A142D] border border-[#1A2B52] text-xs space-y-2">
+        <div className="p-2.5 rounded bg-[#0f182c] border border-[#1c2b47] text-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-slate-200">Local Beneficiaries in {selectedAlternative.name}</span>
             <span className="text-[10px] font-mono text-emerald-400">ONDC Connected</span>
           </div>
 
           <div className="text-[11px] text-slate-300 space-y-1">
-            <div className="flex justify-between py-0.5 border-b border-[#14203D]">
-              <span>Thanedhar Apple Orchard Homestay</span>
-              <strong className="text-white">₹2,800/night</strong>
+            <div className="flex justify-between py-0.5 border-b border-[#1c2b47]">
+              <span>Eco-Homestay Network</span>
+              <strong className="text-white">₹2,200 - ₹2,800/night</strong>
             </div>
             <div className="flex justify-between py-0.5">
-              <span>Kumarsain Pure Angora Shawl Weaver</span>
-              <strong className="text-white">₹2,400 (GI Tag)</strong>
+              <span>Artisan &amp; Handloom Guild</span>
+              <strong className="text-white">Fair Verified Settlement</strong>
             </div>
           </div>
 
           <button
             onClick={onOpenRuralDiscovery}
-            className="w-full py-1.5 text-center text-[11px] font-medium text-emerald-300 hover:text-emerald-200 bg-[#0E1A38] hover:bg-[#152347] border border-[#1E2F5B] rounded transition-all flex items-center justify-center space-x-1"
+            className="w-full py-1.5 text-center text-[11px] font-medium text-emerald-300 hover:text-emerald-200 bg-[#131f37] hover:bg-[#1c2c4d] border border-[#223354] rounded transition-all flex items-center justify-center space-x-1"
           >
             <span>Explore All Rural Listings for {selectedAlternative.name}</span>
             <ChevronRight className="w-3.5 h-3.5" />

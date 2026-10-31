@@ -53,29 +53,29 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
   const hasWaterDeficit = destination.isHotspot && waterDeficit > 0;
 
   return (
-    <div className="h-full flex flex-col bg-[#0E1A38] border border-[#1E2F5B] rounded-lg text-slate-200 overflow-hidden">
+    <div className="h-full flex flex-col bg-[#131f37] border border-[#223354] rounded-lg text-slate-200 overflow-hidden">
       {/* Panel Header */}
-      <div className="px-3.5 py-2.5 bg-[#0B1530] border-b border-[#1E2F5B] flex items-center justify-between">
+      <div className="px-3.5 py-2.5 bg-[#0f182c] border-b border-[#223354] flex items-center justify-between">
         <div className="flex items-center space-x-1.5">
-          <Layers className="w-4 h-4 text-emerald-400" />
+          <Layers className="w-4 h-4 text-emerald-500" />
           <h2 className="text-xs font-bold text-white uppercase tracking-wider">
             1. Digital Tourism Twin
           </h2>
         </div>
-        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#070D1E] text-slate-400 border border-[#17254A]">
+        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#0d1527] text-slate-300 border border-[#223354]">
           GIS Node: {destination.id}
         </span>
       </div>
 
       <div className="p-3.5 space-y-4 overflow-y-auto flex-1">
         {/* Destination Header Card */}
-        <div className="p-2.5 rounded bg-[#0A142D] border border-[#1A2B52]">
+        <div className="p-2.5 rounded bg-[#0f182c] border border-[#1c2b47]">
           <div className="flex items-start justify-between">
             <div>
               <div className="text-sm font-bold text-white flex items-center">
                 <span>{destination.name}</span>
                 <span className={`ml-2 text-[10px] font-mono px-1.5 py-0.2 rounded ${
-                  destination.isHotspot ? 'bg-red-950 text-red-300 border border-red-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                  destination.isHotspot ? 'bg-red-950/80 text-red-300 border border-red-800' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
                 }`}>
                   {destination.isHotspot ? 'CONGESTION HOTSPOT' : 'ALTERNATIVE ECO-HUB'}
                 </span>
@@ -91,7 +91,7 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
         </div>
 
         {/* Saturation Gauge & Progress */}
-        <div className="p-3 rounded bg-[#0A142D] border border-[#1A2B52] space-y-2">
+        <div className="p-3 rounded bg-[#0f182c] border border-[#1c2b47] space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-slate-400 uppercase font-mono">
               Carrying Capacity Saturation
@@ -102,7 +102,7 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-[#070D1E] h-2.5 rounded-full overflow-hidden border border-[#1E2F5B]">
+          <div className="w-full bg-[#0d1527] h-2.5 rounded-full overflow-hidden border border-[#223354]">
             <div
               className={`h-full transition-all duration-500 ${statusBg}`}
               style={{ width: `${Math.min(100, adjustedSaturation)}%` }}
@@ -117,7 +117,7 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
 
         {/* Visitor Estimates: Current vs Carrying Capacity */}
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="p-2.5 rounded bg-[#0A142D] border border-[#1A2B52]">
+          <div className="p-2.5 rounded bg-[#0f182c] border border-[#1c2b47]">
             <span className="text-[10px] text-slate-400 font-mono block">Estimated Daily Inflow</span>
             <span className="text-sm font-black text-white font-mono mt-0.5 block">
               {formatNumber(adjustedVisitors)}
@@ -125,7 +125,7 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
             <span className="text-[10px] text-slate-400">tourists / 24h</span>
           </div>
 
-          <div className="p-2.5 rounded bg-[#0A142D] border border-[#1A2B52]">
+          <div className="p-2.5 rounded bg-[#0f182c] border border-[#1c2b47]">
             <span className="text-[10px] text-slate-400 font-mono block">Carrying Capacity Ceiling</span>
             <span className="text-sm font-black text-slate-300 font-mono mt-0.5 block">
               {formatNumber(destination.carryingCapacity)}
@@ -135,15 +135,15 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
         </div>
 
         {/* Infrastructure Load Stress */}
-        <div className="p-3 rounded bg-[#0A142D] border border-[#1A2B52] space-y-2.5">
+        <div className="p-3 rounded bg-[#0f182c] border border-[#1c2b47] space-y-2.5">
           <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider block">
             Infrastructure Load Diagnostics
           </span>
 
           {/* Municipal Water Draw */}
-          <div className="flex items-center justify-between text-xs py-1 border-b border-[#14203D]">
+          <div className="flex items-center justify-between text-xs py-1 border-b border-[#1c2b47]">
             <span className="text-slate-300 flex items-center">
-              <Droplets className="w-3.5 h-3.5 mr-1.5 text-cyan-400" />
+              <Droplets className="w-3.5 h-3.5 mr-1.5 text-blue-400" />
               Municipal Water Draw:
             </span>
             <span className="font-mono text-white">
@@ -155,9 +155,9 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
           </div>
 
           {/* Solid Waste Generation */}
-          <div className="flex items-center justify-between text-xs py-1 border-b border-[#14203D]">
+          <div className="flex items-center justify-between text-xs py-1 border-b border-[#1c2b47]">
             <span className="text-slate-300 flex items-center">
-              <Trash2 className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
+              <Trash2 className="w-3.5 h-3.5 mr-1.5 text-amber-500" />
               Solid Waste Generation:
             </span>
             <span className="font-mono text-white">
@@ -178,7 +178,7 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
         </div>
 
         {/* 3-Hour Predictive Demand Scrubber */}
-        <div className="p-3 rounded bg-[#0A142D] border border-[#1A2B52] space-y-2">
+        <div className="p-3 rounded bg-[#0f182c] border border-[#1c2b47] space-y-2">
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-slate-300 font-semibold flex items-center">
               <TrendingUp className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
@@ -204,8 +204,8 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
                   onClick={() => setTimeOffsetHours(h)}
                   className={`p-1.5 rounded border text-[10px] transition-all ${
                     isSelected
-                      ? 'bg-[#15803D] text-white border-emerald-400 font-bold'
-                      : 'bg-[#070D1E] text-slate-400 border-[#1E2F5B] hover:text-white'
+                      ? 'bg-[#15803d] text-white border-emerald-500 font-bold'
+                      : 'bg-[#0d1527] text-slate-400 border-[#223354] hover:text-white'
                   }`}
                 >
                   <div className="text-[9px] opacity-75">{h === 0 ? 'Now' : `+${h}h`}</div>
@@ -220,7 +220,7 @@ export const DigitalTwinPanel: React.FC<DigitalTwinPanelProps> = ({
         {destination.isHotspot && onSetAsHotspotToBalance && (
           <button
             onClick={() => onSetAsHotspotToBalance(destination)}
-            className="w-full py-2 px-3 rounded bg-[#101F42] hover:bg-[#152857] border border-[#223970] text-xs font-semibold text-emerald-300 flex items-center justify-center space-x-1.5 transition-all"
+            className="w-full py-2 px-3 rounded bg-[#0f182c] hover:bg-[#16243e] border border-[#223354] text-xs font-semibold text-emerald-300 flex items-center justify-center space-x-1.5 transition-all"
           >
             <span>Target in Load Balancer</span>
             <ArrowRight className="w-3.5 h-3.5" />

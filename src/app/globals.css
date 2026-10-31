@@ -5,12 +5,11 @@
 @tailwind utilities;
 
 :root {
-  --background: #080E21;
-  --foreground: #F1F5F9;
-  --panel-bg: #0E1A38;
-  --panel-border: #1E2F5B;
-  --forest-green: #15803D;
-  --forest-dark: #0D3E1C;
+  --background: #0d1527;
+  --foreground: #f8fafc;
+  --panel-bg: #131f37;
+  --panel-border: #223354;
+  --forest-green: #15803d;
 }
 
 * {
@@ -24,22 +23,22 @@ body {
   overflow-x: hidden;
 }
 
-/* Practical Operational GIS Panels (Clean, Solid, Function-First) */
+/* Authentic Government GIS Utility Panels (Clean, Solid, Function-First) */
 .gis-panel {
-  background-color: #0E1A38;
-  border: 1px solid #1E2F5B;
-  border-radius: 8px;
-}
-
-.gis-panel-subtle {
-  background-color: #0A142D;
-  border: 1px solid #17254A;
+  background-color: #131f37;
+  border: 1px solid #223354;
   border-radius: 6px;
 }
 
+.gis-panel-subtle {
+  background-color: #0f182c;
+  border: 1px solid #1c2b47;
+  border-radius: 4px;
+}
+
 .gis-header {
-  background-color: #0B1633;
-  border-bottom: 1px solid #1E2F5B;
+  background-color: #0f182c;
+  border-bottom: 1px solid #223354;
 }
 
 /* Functional scrollbars */
@@ -48,48 +47,48 @@ body {
   height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #080E21;
+  background: #0d1527;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E2F5B;
-  border-radius: 4px;
+  background: #223354;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2D437A;
+  background: #2f4570;
 }
 
-/* Leaflet dark theme tweaks for realistic GIS styling */
+/* Leaflet container */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background: #091124 !important;
+  background: #0b1120 !important;
   font-family: inherit;
 }
 
-/* OpenStreetMap Dark GIS Filter - 100% Free, No Watermark, No API Key */
+/* Natural cartographic tile rendering - Realistic, authentic OpenStreetMap without AI neon hue-rotation */
 .leaflet-tile {
-  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+  filter: brightness(0.88) contrast(1.08) saturate(0.92);
 }
 
 .leaflet-popup-content-wrapper {
-  background: #0E1A38 !important;
-  color: #F1F5F9 !important;
-  border: 1px solid #1E2F5B !important;
-  border-radius: 6px !important;
+  background: #131f37 !important;
+  color: #f8fafc !important;
+  border: 1px solid #223354 !important;
+  border-radius: 4px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
 }
 
 .leaflet-popup-tip {
-  background: #0E1A38 !important;
-  border: 1px solid #1E2F5B !important;
+  background: #131f37 !important;
+  border: 1px solid #223354 !important;
 }
 
 .leaflet-control-zoom a {
-  background-color: #0E1A38 !important;
-  color: #F1F5F9 !important;
-  border-color: #1E2F5B !important;
+  background-color: #131f37 !important;
+  color: #f8fafc !important;
+  border-color: #223354 !important;
 }
 
 .leaflet-control-zoom a:hover {
-  background-color: #17254A !important;
+  background-color: #1c2b47 !important;
 }

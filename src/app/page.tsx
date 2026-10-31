@@ -14,9 +14,9 @@ import { Destination } from '../types';
 const GisMap = dynamic(() => import('../components/GisMap'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[520px] bg-[#091124] rounded-lg border border-[#1E2F5B] flex flex-col items-center justify-center text-slate-400 font-mono text-xs">
-      <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2" />
-      <span>INITIALIZING GIS TILES (OPENSTREETMAP / CARTO)...</span>
+    <div className="w-full h-full min-h-[520px] bg-[#0b1120] rounded-lg border border-[#223354] flex flex-col items-center justify-center text-slate-400 font-mono text-xs">
+      <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mb-2" />
+      <span>INITIALIZING OPENSTREETMAP GIS TILES...</span>
     </div>
   )
 });
@@ -87,7 +87,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#080E21] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#0d1527] text-slate-100">
       {/* Universal Top Operational Navbar */}
       <Navbar
         activeView={activeView}

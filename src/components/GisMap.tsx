@@ -183,7 +183,7 @@ export default function GisMap({
         const isAlt = alternativeDestination?.id === dest.id;
 
         const badgeBg = isRed ? '#dc2626' : isYellow ? '#d97706' : '#15803d';
-        const borderColor = isSelected ? '#38bdf8' : isAlt ? '#22c55e' : '#1E2F5B';
+        const borderColor = isSelected ? '#38bdf8' : isAlt ? '#22c55e' : '#223354';
         const borderWidth = isSelected || isAlt ? '2px' : '1px';
 
         const customIcon = L.divIcon({
@@ -197,7 +197,7 @@ export default function GisMap({
               transform: translate(-50%, -100%);
             ">
               <div style="
-                background: #0E1A38;
+                background: #131f37;
                 border: ${borderWidth} solid ${borderColor};
                 border-radius: 4px;
                 padding: 3px 6px;
@@ -232,7 +232,7 @@ export default function GisMap({
                 height: 0;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-top: 6px solid #0E1A38;
+                border-top: 6px solid #131f37;
               "></div>
             </div>
           `,
@@ -254,11 +254,11 @@ export default function GisMap({
             <div style="color: #94A3B8; margin-bottom: 6px;">${dest.circuit}</div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 6px;">
-              <div style="background: #0A142D; padding: 4px; border-radius: 3px; border: 1px solid #1E2F5B;">
+              <div style="background: #0f182c; padding: 4px; border-radius: 3px; border: 1px solid #223354;">
                 <span style="color: #94A3B8; font-size: 9px; display: block;">Saturation:</span>
                 <strong style="color: ${badgeBg}; font-size: 12px;">${sat}%</strong>
               </div>
-              <div style="background: #0A142D; padding: 4px; border-radius: 3px; border: 1px solid #1E2F5B;">
+              <div style="background: #0f182c; padding: 4px; border-radius: 3px; border: 1px solid #223354;">
                 <span style="color: #94A3B8; font-size: 9px; display: block;">Daily Visitors:</span>
                 <strong style="color: #F1F5F9; font-size: 11px;">${formatNumber(dest.currentVisitors)}</strong>
               </div>
@@ -282,18 +282,18 @@ export default function GisMap({
   }, [destinations, selectedDestination, alternativeDestination, filterMode, timeOffsetHours, isLeafletReady]);
 
   return (
-    <div className="relative w-full h-full min-h-[520px] bg-[#091124] rounded-lg overflow-hidden border border-[#1E2F5B] flex flex-col">
+    <div className="relative w-full h-full min-h-[520px] bg-[#0b1120] rounded-lg overflow-hidden border border-[#223354] flex flex-col">
       {/* Map Top Operational Bar */}
       <div className="absolute top-3 left-3 z-[1000] flex flex-wrap items-center gap-2">
         {/* Zone Filter Buttons */}
-        <div className="bg-[#0E1A38] border border-[#1E2F5B] rounded p-1 flex items-center space-x-1 shadow-md">
+        <div className="bg-[#131f37] border border-[#223354] rounded p-1 flex items-center space-x-1 shadow-md">
           <span className="text-[10px] text-slate-400 font-mono uppercase px-1.5 flex items-center">
             <Filter className="w-3 h-3 mr-1" /> Zones:
           </span>
           <button
             onClick={() => setFilterMode('all')}
             className={`px-2 py-0.5 text-[10px] font-semibold rounded ${
-              filterMode === 'all' ? 'bg-[#1E2F5B] text-white' : 'text-slate-400 hover:text-white'
+              filterMode === 'all' ? 'bg-[#223354] text-white' : 'text-slate-400 hover:text-white'
             }`}
           >
             All
@@ -301,7 +301,7 @@ export default function GisMap({
           <button
             onClick={() => setFilterMode('red')}
             className={`px-2 py-0.5 text-[10px] font-semibold rounded flex items-center space-x-1 ${
-              filterMode === 'red' ? 'bg-red-900/60 text-red-200 border border-red-700' : 'text-red-400 hover:text-red-300'
+              filterMode === 'red' ? 'bg-red-950 text-red-200 border border-red-700' : 'text-red-400 hover:text-red-300'
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>
@@ -310,7 +310,7 @@ export default function GisMap({
           <button
             onClick={() => setFilterMode('yellow')}
             className={`px-2 py-0.5 text-[10px] font-semibold rounded flex items-center space-x-1 ${
-              filterMode === 'yellow' ? 'bg-amber-900/60 text-amber-200 border border-amber-700' : 'text-amber-400 hover:text-amber-300'
+              filterMode === 'yellow' ? 'bg-amber-950 text-amber-200 border border-amber-700' : 'text-amber-400 hover:text-amber-300'
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>
@@ -319,7 +319,7 @@ export default function GisMap({
           <button
             onClick={() => setFilterMode('green')}
             className={`px-2 py-0.5 text-[10px] font-semibold rounded flex items-center space-x-1 ${
-              filterMode === 'green' ? 'bg-emerald-900/60 text-emerald-200 border border-emerald-700' : 'text-emerald-400 hover:text-emerald-300'
+              filterMode === 'green' ? 'bg-emerald-950 text-emerald-200 border border-emerald-700' : 'text-emerald-400 hover:text-emerald-300'
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
@@ -328,7 +328,7 @@ export default function GisMap({
         </div>
 
         {/* Selected Circuit Badge */}
-        <div className="bg-[#0E1A38]/95 border border-[#1E2F5B] px-2.5 py-1 rounded text-[11px] font-mono text-slate-300 flex items-center space-x-1.5 shadow-md">
+        <div className="bg-[#131f37]/95 border border-[#223354] px-2.5 py-1 rounded text-[11px] font-mono text-slate-300 flex items-center space-x-1.5 shadow-md">
           <Compass className="w-3.5 h-3.5 text-emerald-400" />
           <span>Active Corridor: <strong className="text-white capitalize">{circuit}</strong></span>
         </div>
@@ -338,7 +338,7 @@ export default function GisMap({
       <div ref={mapContainerRef} className="w-full h-full flex-1 min-h-[480px]" />
 
       {/* Map Legend Overlay at Bottom-Left */}
-      <div className="absolute bottom-3 left-3 z-[1000] bg-[#0E1A38]/95 border border-[#1E2F5B] p-2 rounded text-[10px] shadow-lg">
+      <div className="absolute bottom-3 left-3 z-[1000] bg-[#131f37]/95 border border-[#223354] p-2 rounded text-[10px] shadow-lg">
         <div className="font-mono text-slate-400 uppercase tracking-wider mb-1 text-[9px]">
           Carrying Capacity Thresholds (GIS)
         </div>
@@ -356,7 +356,7 @@ export default function GisMap({
             <span>&gt;75% Overloaded / Red</span>
           </span>
           {alternativeDestination && (
-            <span className="flex items-center space-x-1 pl-2 border-l border-[#1E2F5B]">
+            <span className="flex items-center space-x-1 pl-2 border-l border-[#223354]">
               <span className="w-4 h-0.5 bg-emerald-400 inline-block border-t border-dashed"></span>
               <span className="text-emerald-300 font-mono">Diversion Flow</span>
             </span>
