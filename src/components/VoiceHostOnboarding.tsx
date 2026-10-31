@@ -1,19 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Mic, 
   MicOff, 
-  Sparkles, 
   CheckCircle2, 
   Volume2, 
-  Globe2, 
-  Coins, 
-  ShieldCheck, 
-  Languages, 
+  VolumeX, 
   FileText, 
-  RefreshCw,
-  QrCode
+  RefreshCw, 
+  ShieldCheck, 
+  AlertCircle,
+  Sparkles,
+  Send,
+  HelpCircle
 } from 'lucide-react';
 import { formatINR } from '../lib/utils';
 import confetti from 'canvas-confetti';
@@ -24,370 +24,478 @@ interface VoiceHostOnboardingProps {
 
 export const VoiceHostOnboarding: React.FC<VoiceHostOnboardingProps> = ({ onHostOnboarded }) => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [spokenHindiText, setSpokenHindiText] = useState<string>('');
-  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-  const [onboardedSuccess, setOnboardedSuccess] = useState<boolean>(false);
+  const [spokenText, setSpokenText] = useState<string>('');
+  const [typedText, setTypedText] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isRegistered, setIsRegistered] = useState<boolean>(false);
+  const [ttsEnabled, setTtsEnabled] = useState<boolean>(true);
+  const [agentFeedback, setAgentFeedback] = useState<string>(
+    'प्रेस माइक या नीचे बोलें — Press microphone to describe your homestay, village, and price in Hindi or English.'
+  );
 
-  // Extracted entities state
-  const [extractedData, setExtractedData] = useState<{
-    hostName: string;
-    village: string;
-    district: string;
-    state: string;
-    listingName: string;
-    category: string;
-    pricingINR: number;
-    description: string;
-    amenities: string[];
-    bppNodeId: string;
-  } | null>(null);
+  // Form Fields (editable by host)
+  const [formData, setFormData] = useState({
+    hostName: '',
+    village: '',
+    district: 'Shimla Rural',
+    state: 'Himachal Pradesh',
+    category: 'Rural Homestay',
+    pricingINR: '',
+    highlights: 'Home-cooked local meals, Mountain view, Clean wooden rooms'
+  });
 
-  // Pre-loaded realistic voice samples for instant demo testing
-  const SAMPLE_HINDI_SPEECH_SCRIPTS = [
-    {
-      label: 'Sample 1: Thanedhar Apple Orchard Homestay',
-      hindi: 'मेरा नाम सुरेश वर्मा है। नारकंडा के पास थनेधार गांव में सेब के बगीचे के बीच हमारा 100 साल पुराना लकड़ी का कॉटेज है। 2 सुंदर कमरे हैं, 2800 रुपये प्रति रात का किराया है, और हम घर का बना पारंपरिक सिड्डू और ताजा पहाड़ी खाना खिलाएंगे।',
-      parsed: {
-        hostName: 'Suresh Verma',
-        village: 'Thanedhar (near Narkanda)',
-        district: 'Shimla Rural',
-        state: 'Himachal Pradesh',
-        listingName: 'The Orchard Barn - Thanedhar Apple Chalet',
-        category: 'Rural Homestay',
-        pricingINR: 2800,
-        description: '100-year-old deodar wood cottage situated amidst high-altitude apple orchards. Featuring home-cooked Siddu, mountain views, and authentic Himachali hospitality.',
-        amenities: ['100yr Heritage Wood', 'Siddu Mountain Dinners', 'Solar Heated Water', 'Apple Orchard Access'],
-        bppNodeId: 'ondc-hp-rural.coop/bpp/thanedhar-verma-918'
-      }
-    },
-    {
-      label: 'Sample 2: Kumarsain Pure Angora Handloom Weaver',
-      hindi: 'मेरा नाम हेमराज नेगी है, कुमारसैन गांव से। हम हाथ के खड्डे पर भेड़ और अंगोरा ऊन की पारंपरिक किन्नौरी शॉल बनाते हैं। जीआई टैग प्रमाणित है, 2400 रुपये कीमत है।',
-      parsed: {
-        hostName: 'Hemraj Negi',
-        village: 'Kumarsain',
-        district: 'Shimla Rural',
-        state: 'Himachal Pradesh',
-        listingName: 'Kinnauri Pure Angora Pit-Loom Shawl Studio',
-        category: 'Artisan Handloom',
-        pricingINR: 2400,
-        description: 'GI-certified geometric border Kinnauri and Himachali shawls handwoven on ancestral pit-looms with pure sheep and Angora wool.',
-        amenities: ['GI Tag #HP-89 Certified', 'Pure Angora Wool', 'Direct Artisan Settlement', 'Live Weaving Demo'],
-        bppNodeId: 'ondc-craft.gov.in/bpp/kumarsain-negi-04'
-      }
-    }
-  ];
+  const recognitionRef = useRef<any>(null);
 
-  // Speech Recognition fallback and setup
-  const handleToggleVoiceRecording = () => {
-    if (isRecording) {
-      stopRecordingAndAnalyze();
-    } else {
-      startRecording();
-    }
+  // Text to speech helper
+  const speak = (msg: string) => {
+    if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(msg);
+      utt.rate = 0.95;
+      const voices = window.speechSynthesis.getVoices();
+      const hiVoice = voices.find(v => v.lang.includes('hi') || v.lang.includes('Hindi'));
+      if (hiVoice) utt.voice = hiVoice;
+      window.speechSynthesis.speak(utt);
+    } catch (e) {}
   };
 
-  const startRecording = () => {
-    setIsRecording(true);
-    setSpokenHindiText('');
-    setExtractedData(null);
-    setOnboardedSuccess(false);
+  // Extract from input text
+  const processInputText = (rawText: string) => {
+    setIsProcessing(true);
 
-    // Check if browser has speech recognition
+    setTimeout(() => {
+      setIsProcessing(false);
+      const text = rawText.trim().toLowerCase();
+
+      // Check if it is only a greeting
+      const greetings = ['hello', 'hi', 'namaste', 'हेलो', 'नमस्ते', 'नमस्कार', 'प्रणाम'];
+      const isGreeting = greetings.some(g => text === g || text.replace(/^[~।,!\.\?\s]+|[।,!\.\?\s]+$/g, '') === g);
+
+      if (isGreeting || text.length < 10) {
+        const promptMsg = 'नमस्ते! कृपया अपने होमस्टे का नाम, गाँव और किराया (price) बोलकर बताएं।';
+        setAgentFeedback(promptMsg);
+        speak(promptMsg);
+        return;
+      }
+
+      // Extract Name
+      let extractedName = formData.hostName;
+      const nameMatch = rawText.match(/(?:मेरा नाम|मैं|हमारा नाम)\s+([A-Za-z\u0900-\u097F\s]{2,20})(?:है|हूँ|बोल|से|,|\.|$)/i) ||
+                        rawText.match(/(?:my name is|i am)\s+([A-Za-z\s]{2,20})/i);
+      if (nameMatch && nameMatch[1]?.trim()) {
+        extractedName = nameMatch[1].trim();
+      }
+
+      // Extract Price
+      let extractedPrice = formData.pricingINR;
+      const priceMatch = rawText.match(/(\d{3,5})\s*(?:₹|रु|रुपये|रुपया|rs|inr|प्रति|per)/i) ||
+                         rawText.match(/(?:किराया|कीमत|price|rate)\s*(?:है|is)?\s*(\d{3,5})/i);
+      if (priceMatch && priceMatch[1]) {
+        extractedPrice = priceMatch[1];
+      } else if (text.includes('दो हज़ार आठ सौ') || text.includes('2800')) {
+        extractedPrice = '2800';
+      } else if (text.includes('चौबीस सौ') || text.includes('2400')) {
+        extractedPrice = '2400';
+      } else if (text.includes('दो हज़ार') || text.includes('2000')) {
+        extractedPrice = '2000';
+      } else if (text.includes('पंद्रह सौ') || text.includes('1500')) {
+        extractedPrice = '1500';
+      }
+
+      // Extract Village
+      let extractedVillage = formData.village;
+      let extractedDistrict = formData.district;
+
+      if (text.includes('thanedhar') || text.includes('थनेधार')) {
+        extractedVillage = 'Thanedhar';
+        extractedDistrict = 'Shimla Rural';
+      } else if (text.includes('kumarsain') || text.includes('कुमारसैन')) {
+        extractedVillage = 'Kumarsain';
+        extractedDistrict = 'Shimla Rural';
+      } else if (text.includes('jibhi') || text.includes('जिभी')) {
+        extractedVillage = 'Jibhi';
+        extractedDistrict = 'Kullu';
+      } else if (text.includes('kasol') || text.includes('कसोल')) {
+        extractedVillage = 'Kasol';
+        extractedDistrict = 'Kullu';
+      } else if (text.includes('manali') || text.includes('मनाली')) {
+        extractedVillage = 'Manali';
+        extractedDistrict = 'Kullu';
+      } else {
+        const vMatch = rawText.match(/([A-Za-z\u0900-\u097F]{2,20})\s*(?:गाँव|गांव|village)/i);
+        if (vMatch && vMatch[1]) extractedVillage = vMatch[1].trim();
+      }
+
+      // Extract Category
+      let extractedCategory = formData.category;
+      if (text.includes('शॉल') || text.includes('बुनकर') || text.includes('handloom') || text.includes('weaver')) {
+        extractedCategory = 'Artisan Handloom';
+      } else if (text.includes('गाइड') || text.includes('guide') || text.includes('trek')) {
+        extractedCategory = 'Local Guide';
+      } else {
+        extractedCategory = 'Rural Homestay';
+      }
+
+      // Update Form
+      setFormData(prev => ({
+        ...prev,
+        hostName: extractedName || prev.hostName,
+        village: extractedVillage || prev.village,
+        district: extractedDistrict || prev.district,
+        pricingINR: extractedPrice || prev.pricingINR,
+        category: extractedCategory
+      }));
+
+      // Feedback prompt
+      if (!extractedPrice && !extractedVillage) {
+        const msg = 'कृपया अपने गाँव का नाम और प्रति रात का किराया (price) भी बताएं।';
+        setAgentFeedback(msg);
+        speak(msg);
+      } else if (!extractedPrice) {
+        const msg = `${extractedVillage || 'स्थान'} दर्ज हो गया है। कृपया प्रति रात का किराया (रुपये में) बताएं।`;
+        setAgentFeedback(msg);
+        speak(msg);
+      } else {
+        const msg = `विवरण प्राप्त हुआ! कृपया नीचे दिए गए फॉर्म की पुष्टि करें और ONDC पर रजिस्टर करें।`;
+        setAgentFeedback(msg);
+        speak(msg);
+      }
+    }, 600);
+  };
+
+  // Toggle Recording
+  const handleToggleRecord = () => {
+    if (isRecording) {
+      if (recognitionRef.current) recognitionRef.current.stop();
+      setIsRecording(false);
+      return;
+    }
+
     if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       try {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
         recognition.lang = 'hi-IN';
-        recognition.continuous = false;
         recognition.interimResults = true;
 
-        recognition.onresult = (event: any) => {
-          let transcript = '';
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            transcript += event.results[i][0].transcript;
+        let finalTranscript = '';
+
+        recognition.onstart = () => setIsRecording(true);
+        recognition.onresult = (e: any) => {
+          let str = '';
+          for (let i = e.resultIndex; i < e.results.length; ++i) {
+            str += e.results[i][0].transcript;
           }
-          setSpokenHindiText(transcript);
+          finalTranscript = str;
+          setSpokenText(str);
         };
-
         recognition.onend = () => {
-          stopRecordingAndAnalyze();
+          setIsRecording(false);
+          if (finalTranscript.trim()) {
+            processInputText(finalTranscript);
+          }
         };
-
-        recognition.onerror = () => {
-          // If mic fails or permission denied, fallback to pre-loaded sample
-          simulateVoiceStream(SAMPLE_HINDI_SPEECH_SCRIPTS[0]);
-        };
+        recognition.onerror = () => setIsRecording(false);
 
         recognition.start();
         return;
       } catch (e) {
-        // Fallback simulation
+        setIsRecording(false);
       }
     }
-
-    // Default simulation if web speech not permitted
-    simulateVoiceStream(SAMPLE_HINDI_SPEECH_SCRIPTS[0]);
   };
 
-  const simulateVoiceStream = (sample: typeof SAMPLE_HINDI_SPEECH_SCRIPTS[0]) => {
-    let index = 0;
-    const text = sample.hindi;
-    const interval = setInterval(() => {
-      index += 5;
-      if (index >= text.length) {
-        clearInterval(interval);
-        setSpokenHindiText(text);
-        setIsRecording(false);
-        parseSpokenText(sample.parsed);
-      } else {
-        setSpokenHindiText(text.substring(0, index));
-      }
-    }, 60);
+  // Quick Demo Samples
+  const handleLoadSample = (sampleType: 'homestay' | 'handloom') => {
+    if (sampleType === 'homestay') {
+      const sampleText = 'मेरा नाम सुरेश वर्मा है। थनेधार गांव में सेब के बगीचे के बीच हमारा कॉटेज है, 2800 रुपये प्रति रात का किराया है।';
+      setSpokenText(sampleText);
+      setFormData({
+        hostName: 'Suresh Verma',
+        village: 'Thanedhar',
+        district: 'Shimla Rural',
+        state: 'Himachal Pradesh',
+        category: 'Rural Homestay',
+        pricingINR: '2800',
+        highlights: '100yr Heritage Deodar Wood, Traditional Siddu Meals, Apple Orchard Access'
+      });
+      setAgentFeedback('सैंपल लोड हुआ: सुरेश वर्मा (थनेधार सेब बगीचा कॉटेज - ₹2,800/रात)');
+      speak('सुरेश वर्मा जी, थनेधार होमस्टे का विवरण लोड हो गया है।');
+    } else {
+      const sampleText = 'मेरा नाम हेमराज नेगी है, कुमारसैन गांव से। हम हाथ के खड्डे पर पारंपरिक किन्नौरी शॉल बनाते हैं, 2400 रुपये कीमत है।';
+      setSpokenText(sampleText);
+      setFormData({
+        hostName: 'Hemraj Negi',
+        village: 'Kumarsain',
+        district: 'Shimla Rural',
+        state: 'Himachal Pradesh',
+        category: 'Artisan Handloom',
+        pricingINR: '2400',
+        highlights: 'GI-Certified Pure Wool Shawls, Ancestral Pit-Loom Weaving'
+      });
+      setAgentFeedback('सैंपल लोड हुआ: हेमराज नेगी (कुमारसैन अंगोरा हथकरघा - ₹2,400)');
+      speak('हेमराज नेगी जी, कुमारसैन हथकरघा का विवरण लोड हो गया है।');
+    }
+    setIsRegistered(false);
   };
 
-  const stopRecordingAndAnalyze = () => {
-    setIsRecording(false);
-    setIsAnalyzing(true);
-    // Parse the data
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setExtractedData(SAMPLE_HINDI_SPEECH_SCRIPTS[0].parsed);
-    }, 900);
-  };
-
-  const parseSpokenText = (parsed: typeof SAMPLE_HINDI_SPEECH_SCRIPTS[0]['parsed']) => {
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setExtractedData(parsed);
-    }, 700);
-  };
-
-  const handleSelectScript = (sample: typeof SAMPLE_HINDI_SPEECH_SCRIPTS[0]) => {
-    setSpokenHindiText(sample.hindi);
-    parseSpokenText(sample.parsed);
-  };
-
-  const handlePublishListing = () => {
-    setOnboardedSuccess(true);
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      colors: ['#10b981', '#34d399', '#f59e0b']
-    });
+  const handleRegisterNode = () => {
+    setIsRegistered(true);
+    confetti({ particleCount: 60, spread: 60 });
     if (onHostOnboarded) onHostOnboarded();
   };
 
+  const handleReset = () => {
+    setSpokenText('');
+    setTypedText('');
+    setIsRegistered(false);
+    setFormData({
+      hostName: '',
+      village: '',
+      district: 'Shimla Rural',
+      state: 'Himachal Pradesh',
+      category: 'Rural Homestay',
+      pricingINR: '',
+      highlights: 'Home-cooked local meals, Mountain view, Clean wooden rooms'
+    });
+    setAgentFeedback('नया सत्र शुरू हुआ — Press mic to speak your details.');
+  };
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Voice Portal Header */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-navy-950 via-navy-900 to-emerald-950/20 relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
-              <Languages className="w-3.5 h-3.5 text-emerald-400" />
-              <span>MULTILINGUAL VOICE-FIRST INCLUSION &bull; HINDI / REGIONAL AI</span>
+    <div className="max-w-4xl mx-auto space-y-6 py-6 px-4">
+      {/* Header */}
+      <div className="gis-panel p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="text-[11px] font-mono text-emerald-400 font-bold uppercase tracking-wider">
+              INCLUSION MODULE &bull; REGIONAL VOICE ONBOARDING
             </div>
-            <h2 className="text-3xl font-black text-white">
-              Voice-Based Rural Host Onboarding Portal
+            <h2 className="text-xl font-bold text-white mt-1">
+              Village Host &amp; Artisan Onboarding (Voice Demo)
             </h2>
-            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Empowering village elders, women-led self-help groups, and weavers who do not write English. Simply speak in Hindi; DeshDarshan converts natural village speech into structured ONDC Beckn listings in seconds.
+            <p className="text-xs text-slate-400 mt-0.5">
+              Designed for rural hosts who do not write English. Simple, practical demonstration converting spoken Hindi/English into standard ONDC registry fields.
             </p>
           </div>
 
-          <div className="flex items-center space-x-3 bg-navy-950/80 p-3.5 rounded-2xl border border-white/10">
-            <Globe2 className="w-5 h-5 text-emerald-400" />
-            <div className="text-xs">
-              <span className="text-slate-400 block">Languages Supported:</span>
-              <strong className="text-white">Hindi, Pahari, Garhwali, Tamil, Konkani</strong>
-            </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setTtsEnabled(!ttsEnabled)}
+              className="px-2.5 py-1.5 rounded bg-[#0A142D] border border-[#1E2F5B] text-slate-300 text-xs flex items-center space-x-1"
+            >
+              {ttsEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5 text-slate-500" />}
+              <span>{ttsEnabled ? 'Voice: On' : 'Voice: Mute'}</span>
+            </button>
+            <button
+              onClick={handleReset}
+              className="px-2.5 py-1.5 rounded bg-[#0A142D] border border-[#1E2F5B] text-slate-300 hover:text-white text-xs flex items-center space-x-1"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+              <span>Reset</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main Interactive Microphone Console */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Recording Interface (5 cols) */}
-        <div className="lg:col-span-5 glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 flex flex-col items-center text-center space-y-6">
-          <span className="text-xs font-mono uppercase tracking-wider text-slate-400">
-            VOICE INPUT CAPTURE
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        {/* Left Column: Voice Capture Console (5 cols) */}
+        <div className="md:col-span-5 gis-panel p-5 flex flex-col items-center text-center space-y-4">
+          <span className="text-[10px] font-mono uppercase text-slate-400">
+            Voice Capture
           </span>
 
-          {/* Big Microphone Button */}
-          <div className="relative my-2">
-            {isRecording && (
-              <div className="absolute inset-0 rounded-full bg-rose-500/30 animate-ping scale-150" />
-            )}
-            <button
-              onClick={handleToggleVoiceRecording}
-              className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl relative z-10 ${
-                isRecording
-                  ? 'bg-rose-500 text-white shadow-rose-500/50 scale-105'
-                  : 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-navy-950 hover:scale-105 shadow-emerald-500/30'
-              }`}
-            >
-              {isRecording ? <MicOff className="w-10 h-10" /> : <Mic className="w-10 h-10" />}
-            </button>
-          </div>
+          {/* Microphone */}
+          <button
+            onClick={handleToggleRecord}
+            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+              isRecording
+                ? 'bg-red-600 text-white animate-pulse'
+                : 'bg-[#15803D] hover:bg-[#166534] text-white shadow-lg'
+            }`}
+          >
+            {isRecording ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+          </button>
 
           <div>
-            <h4 className="text-base font-bold text-white">
-              {isRecording ? 'Listening in Hindi... (बोलिए)' : 'Press Microphone to Speak'}
-            </h4>
-            <p className="text-xs text-slate-400 mt-1">
-              {isRecording ? 'Speak your name, village, room count, and price' : 'Tap to describe your homestay, craft, or local guiding service'}
+            <h3 className="text-sm font-bold text-white">
+              {isRecording ? 'Listening... बोलिए' : 'Press Microphone to Speak'}
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {isRecording 
+                ? 'Speak in Hindi or English (name, village, price)' 
+                : 'Tap to speak your name, village, and price.'}
             </p>
           </div>
 
-          {/* Soundwave Animation during recording */}
-          {isRecording && (
-            <div className="flex items-center justify-center space-x-1.5 h-8">
-              {[12, 24, 16, 28, 20, 14, 26, 18].map((h, i) => (
-                <div
-                  key={i}
-                  className="w-1 bg-emerald-400 rounded-full wave-bar"
-                  style={{ animationDelay: `${i * 0.1}s`, height: `${h}px` }}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Pre-recorded sample quick buttons */}
-          <div className="w-full pt-4 border-t border-white/10 text-left space-y-2">
-            <span className="text-[11px] text-slate-400 font-medium block">
-              Or Try One-Click Authentic Voice Prompts:
+          {/* Quick Demo Samples */}
+          <div className="w-full pt-3 border-t border-[#1E2F5B] text-left space-y-2">
+            <span className="text-[10px] font-mono text-slate-400 uppercase block">
+              Or Test One-Click Real Audio Samples:
             </span>
             <div className="space-y-1.5">
-              {SAMPLE_HINDI_SPEECH_SCRIPTS.map((s, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSelectScript(s)}
-                  className="w-full text-left p-2.5 rounded-xl bg-navy-900/80 hover:bg-navy-800 border border-white/5 hover:border-emerald-500/30 text-xs text-slate-300 transition-colors flex items-center justify-between"
-                >
-                  <span className="truncate">{s.label}</span>
-                  <Volume2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 ml-2" />
-                </button>
-              ))}
+              <button
+                onClick={() => handleLoadSample('homestay')}
+                className="w-full text-left p-2 rounded bg-[#0A142D] hover:bg-[#101F42] border border-[#1E2F5B] text-xs text-slate-200"
+              >
+                <strong>Sample 1:</strong> Thanedhar Apple Orchard Homestay
+              </button>
+              <button
+                onClick={() => handleLoadSample('handloom')}
+                className="w-full text-left p-2 rounded bg-[#0A142D] hover:bg-[#101F42] border border-[#1E2F5B] text-xs text-slate-200"
+              >
+                <strong>Sample 2:</strong> Kumarsain Pure Angora Handloom Weaver
+              </button>
             </div>
+          </div>
+
+          {/* Type Option */}
+          <div className="w-full pt-3 border-t border-[#1E2F5B] text-left">
+            <span className="text-[10px] text-slate-400 block mb-1">Or Type Text Directly:</span>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (typedText.trim()) {
+                  setSpokenText(typedText);
+                  processInputText(typedText);
+                  setTypedText('');
+                }
+              }}
+              className="flex gap-1.5"
+            >
+              <input
+                type="text"
+                value={typedText}
+                onChange={(e) => setTypedText(e.target.value)}
+                placeholder="उदा: मेरा नाम राजेश है, जिभी में होमस्टे, किराया 1800"
+                className="flex-1 bg-[#0A142D] border border-[#1E2F5B] rounded px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              />
+              <button
+                type="submit"
+                className="px-2.5 py-1.5 bg-[#15803D] text-white text-xs font-semibold rounded"
+              >
+                Send
+              </button>
+            </form>
           </div>
         </div>
 
-        {/* Right Column: Live Transcription & Auto-Generated ONDC Listing (7 cols) */}
-        <div className="lg:col-span-7 space-y-5">
-          {/* Real-time Hindi Speech Box */}
-          <div className="glass-panel p-5 rounded-2xl border border-white/10 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 flex items-center">
-                <FileText className="w-3.5 h-3.5 mr-1.5" />
-                Speech-to-Text Transcription (Hindi)
+        {/* Right Column: Transcription & Standard Listing Form (7 cols) */}
+        <div className="md:col-span-7 space-y-4">
+          {/* Transcription & Feedback */}
+          <div className="gis-panel p-4 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <span className="flex items-center text-emerald-400 font-semibold">
+                <FileText className="w-3.5 h-3.5 mr-1" /> Speech Transcription
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">Whisper/ASR Stream</span>
+              <span>{isProcessing ? 'Analyzing Input...' : 'Whisper ASR Stream'}</span>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-navy-950/80 border border-white/5 min-h-[70px] text-xs text-slate-200 italic leading-relaxed">
-              {spokenHindiText ? (
-                <span>&ldquo;{spokenHindiText}&rdquo;</span>
+            <div className="p-2.5 rounded bg-[#0A142D] border border-[#1E2F5B] min-h-[48px] text-xs text-slate-200">
+              {spokenText ? (
+                <span className="text-emerald-300 font-medium">&ldquo;{spokenText}&rdquo;</span>
               ) : (
-                <span className="text-slate-500 not-italic">
-                  Press the microphone or select a sample prompt to see natural village Hindi transcribed and parsed in real time...
-                </span>
+                <span className="text-slate-500 italic">No input yet. Speak or select a sample above...</span>
               )}
+            </div>
+
+            {/* Simple Feedback */}
+            <div className="p-2 rounded bg-[#0A142D] border border-[#1E2F5B] text-[11px] text-slate-300 flex items-start space-x-2">
+              <span className="text-emerald-400 font-bold flex-shrink-0">Status:</span>
+              <span>{agentFeedback}</span>
             </div>
           </div>
 
-          {/* Extracted Entity Form / Card */}
-          {extractedData && (
-            <div className="glass-panel-glow p-6 rounded-3xl border border-emerald-500/40 space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                    AI Entity Extraction Complete
-                  </span>
-                  <h3 className="text-lg font-bold text-white mt-1">
-                    {extractedData.listingName}
-                  </h3>
-                </div>
+          {/* Structured Registration Form */}
+          <div className="gis-panel p-4 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-[#1E2F5B]">
+              <span className="text-xs font-bold text-white uppercase font-mono">
+                Extracted Listing Details (Editable)
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">ONDC Beckn Schema</span>
+            </div>
 
-                <div className="text-right">
-                  <span className="text-2xl font-black text-emerald-400">
-                    {formatINR(extractedData.pricingINR)}
-                  </span>
-                  <span className="block text-[10px] text-slate-400">Fair Verified Rate</span>
-                </div>
-              </div>
-
-              {/* Parsed Fields Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="bg-navy-950/80 p-3 rounded-xl border border-white/5">
-                  <span className="text-slate-400 block text-[10px]">Host &amp; Community</span>
-                  <span className="font-bold text-white">{extractedData.hostName}</span>
-                </div>
-
-                <div className="bg-navy-950/80 p-3 rounded-xl border border-white/5">
-                  <span className="text-slate-400 block text-[10px]">Village &amp; District</span>
-                  <span className="font-bold text-white">{extractedData.village}, {extractedData.district}</span>
-                </div>
-
-                <div className="bg-navy-950/80 p-3 rounded-xl border border-white/5">
-                  <span className="text-slate-400 block text-[10px]">Extracted Category</span>
-                  <span className="font-bold text-emerald-400">{extractedData.category}</span>
-                </div>
-
-                <div className="bg-navy-950/80 p-3 rounded-xl border border-white/5">
-                  <span className="text-slate-400 block text-[10px]">ONDC Beckn BPP Node ID</span>
-                  <span className="font-mono text-[10px] text-cyan-300 truncate block">
-                    {extractedData.bppNodeId}
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-navy-950/60 p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] text-slate-400 block mb-1">Generated Rural Bio:</span>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  {extractedData.description}
-                </p>
-              </div>
-
-              {/* Amenities */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <span className="text-[10px] text-slate-400 block mb-1.5 font-medium">Extracted Highlights:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {extractedData.amenities.map((item, i) => (
-                    <span key={i} className="text-[11px] px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-medium">
-                      {item}
-                    </span>
-                  ))}
-                </div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">Host Name</label>
+                <input
+                  type="text"
+                  value={formData.hostName}
+                  onChange={(e) => setFormData({ ...formData, hostName: e.target.value })}
+                  placeholder="e.g. Suresh Verma"
+                  className="w-full bg-[#0A142D] border border-[#1E2F5B] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                />
               </div>
 
-              {/* Action: Publish to ONDC */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-[11px] text-slate-400 flex items-center">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400 mr-1.5 flex-shrink-0" />
-                  <span>Direct UPI settlements linked to Gram Panchayat bank account.</span>
-                </div>
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">Village Location</label>
+                <input
+                  type="text"
+                  value={formData.village}
+                  onChange={(e) => setFormData({ ...formData, village: e.target.value })}
+                  placeholder="e.g. Thanedhar"
+                  className="w-full bg-[#0A142D] border border-[#1E2F5B] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                />
+              </div>
 
-                <button
-                  onClick={handlePublishListing}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-navy-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all hover:scale-105"
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">Category</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full bg-[#0A142D] border border-[#1E2F5B] rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
                 >
-                  {onboardedSuccess ? 'Node Active on ONDC!' : 'Publish Host Node to ONDC'}
-                </button>
+                  <option value="Rural Homestay">Rural Homestay</option>
+                  <option value="Artisan Handloom">Artisan Handloom</option>
+                  <option value="Local Guide">Local Guide</option>
+                  <option value="Organic Farm Feast">Organic Farm Feast</option>
+                </select>
               </div>
 
-              {onboardedSuccess && (
-                <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/50 flex items-center space-x-3 text-xs text-emerald-300 animate-fadeIn">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                  <div>
-                    <strong className="text-white block font-semibold">Rural Listing Verified &amp; Broadcaster Online</strong>
-                    Your node is now discoverable to thousands of tourists rerouted from Shimla and Manali hotspots.
-                  </div>
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-0.5">Price (INR)</label>
+                <input
+                  type="text"
+                  value={formData.pricingINR}
+                  onChange={(e) => setFormData({ ...formData, pricingINR: e.target.value })}
+                  placeholder="e.g. 2800"
+                  className="w-full bg-[#0A142D] border border-[#1E2F5B] rounded px-2.5 py-1.5 text-xs text-emerald-300 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] text-slate-400 block mb-0.5">Highlights &amp; Amenities</label>
+              <input
+                type="text"
+                value={formData.highlights}
+                onChange={(e) => setFormData({ ...formData, highlights: e.target.value })}
+                className="w-full bg-[#0A142D] border border-[#1E2F5B] rounded px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Registration Action */}
+            <div className="pt-2">
+              <button
+                onClick={handleRegisterNode}
+                disabled={!formData.hostName || !formData.village || !formData.pricingINR}
+                className="w-full py-2 px-3 rounded bg-[#15803D] hover:bg-[#166534] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center justify-center space-x-1.5 shadow-md transition-all"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>{isRegistered ? 'Node Registered on ONDC Network' : 'Register Host Node on ONDC'}</span>
+              </button>
+
+              {isRegistered && (
+                <div className="mt-2 p-2.5 rounded bg-emerald-950/60 border border-emerald-600 text-xs text-emerald-300 flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+                  <span>
+                    Successfully registered! Host Node ID: <code className="text-white font-mono text-[10px]">ondc-hp-rural.coop/bpp/{formData.village.toLowerCase()}-node-01</code>
+                  </span>
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

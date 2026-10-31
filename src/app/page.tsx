@@ -1,222 +1,176 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Navbar } from '../components/Navbar';
-import { HeroSection } from '../components/HeroSection';
-import { LoadBalancer } from '../components/LoadBalancer';
-import { TourismHeatmap } from '../components/TourismHeatmap';
-import { DigitalTwin } from '../components/DigitalTwin';
-import { TourismCredits } from '../components/TourismCredits';
+import { DigitalTwinPanel } from '../components/DigitalTwinPanel';
+import { LoadBalancerPanel } from '../components/LoadBalancerPanel';
 import { RuralDiscovery } from '../components/RuralDiscovery';
-import { ONDCMarketplace } from '../components/ONDCMarketplace';
 import { VoiceHostOnboarding } from '../components/VoiceHostOnboarding';
-import { SustainabilityDashboard } from '../components/SustainabilityDashboard';
-import { CommandCenter } from '../components/CommandCenter';
-import { MultiAgentVisualizer } from '../components/MultiAgentVisualizer';
-import { INITIAL_USER_CREDITS, DESTINATIONS } from '../data/mockData';
-import { Destination, RuralListing, UserCreditsProfile, CreditPerk } from '../types';
-import { 
-  Compass, 
-  MapPin, 
-  Coins, 
-  Leaf, 
-  ShieldAlert, 
-  Bot, 
-  ShoppingBag, 
-  Mic, 
-  Layers, 
-  Globe2,
-  Sparkles,
-  Award
-} from 'lucide-react';
+import { DESTINATIONS } from '../data/mockData';
+import { Destination } from '../types';
+
+// Dynamically import Leaflet GIS Map with SSR disabled for Next.js
+const GisMap = dynamic(() => import('../components/GisMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full min-h-[520px] bg-[#091124] rounded-lg border border-[#1E2F5B] flex flex-col items-center justify-center text-slate-400 font-mono text-xs">
+      <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2" />
+      <span>INITIALIZING GIS TILES (OPENSTREETMAP / CARTO)...</span>
+    </div>
+  )
+});
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<string>('balancer');
+  const [activeView, setActiveView] = useState<'map-balancer' | 'rural-ondc' | 'voice-onboard'>('map-balancer');
   const [activeCircuit, setActiveCircuit] = useState<string>('himachal');
-  const [userCredits, setUserCredits] = useState<UserCreditsProfile>(INITIAL_USER_CREDITS);
-  const [selectedHotspotNameForRural, setSelectedHotspotNameForRural] = useState<string>('Shimla');
+  const [timeOffsetHours, setTimeOffsetHours] = useState<number>(0);
 
-  // Callback when a user accepts an AI Rebalance proposal
-  const handleAcceptRebalance = (source: Destination, alt: Destination) => {
-    const bonus = alt.creditBonus || 450;
-    setUserCredits(prev => ({
-      ...prev,
-      balance: prev.balance + bonus,
-      totalEarned: prev.totalEarned + bonus,
-      co2SavedLifetimeKg: parseFloat((prev.co2SavedLifetimeKg + 28.4).toFixed(1)),
-      ruralEconomyContributedINR: prev.ruralEconomyContributedINR + (alt.moneyRedirectedINR || 4500),
-      history: [
-        {
-          id: `tx-${Date.now()}`,
-          timestamp: 'Just now',
-          destination: `${alt.name} (Bypassed ${source.name})`,
-          destinationType: 'Alternative Eco-Hub',
-          creditsEarned: bonus,
-          co2SavedKg: 28.4,
-          economicImpactINR: alt.moneyRedirectedINR || 4500
-        },
-        ...prev.history
-      ]
-    }));
+  // Hotspots and alternatives
+  const hotspots = DESTINATIONS.filter(d => d.isHotspot);
+  const [selectedHotspot, setSelectedHotspot] = useState<Destination>(hotspots[0] || DESTINATIONS[0]);
+  
+  // Alternatives for the current hotspot
+  const alternatives = DESTINATIONS.filter(d => d.nearestHotspotId === selectedHotspot.id);
+  const [selectedAlternative, setSelectedAlternative] = useState<Destination>(
+    alternatives[0] || DESTINATIONS[1]
+  );
+
+  // Inspected node for the Digital Twin panel (defaults to selected hotspot)
+  const [inspectedDestination, setInspectedDestination] = useState<Destination>(selectedHotspot);
+
+  // Hotspot change handler
+  const handleSelectHotspot = (hotspot: Destination) => {
+    setSelectedHotspot(hotspot);
+    setInspectedDestination(hotspot);
+    const relatedAlts = DESTINATIONS.filter(d => d.nearestHotspotId === hotspot.id);
+    if (relatedAlts.length > 0) {
+      setSelectedAlternative(relatedAlts[0]);
+    }
   };
 
-  const handleRedeemPerk = (perk: CreditPerk) => {
-    setUserCredits(prev => ({
-      ...prev,
-      balance: prev.balance - perk.costCredits
-    }));
-  };
-
-  const handleExploreRural = (hotspotName: string) => {
-    setSelectedHotspotNameForRural(hotspotName);
-    setActiveTab('rural-discovery');
-  };
-
-  const handleOpenONDC = (itemTitle: string) => {
-    setActiveTab('ondc');
-  };
-
-  const handleSelectFromMap = (dest: Destination) => {
-    setActiveTab('balancer');
+  // Map marker click handler
+  const handleSelectDestinationFromMap = (dest: Destination) => {
+    setInspectedDestination(dest);
+    if (dest.isHotspot) {
+      setSelectedHotspot(dest);
+      const relatedAlts = DESTINATIONS.filter(d => d.nearestHotspotId === dest.id);
+      if (relatedAlts.length > 0) setSelectedAlternative(relatedAlts[0]);
+    } else {
+      setSelectedAlternative(dest);
+      if (dest.nearestHotspotId) {
+        const parent = hotspots.find(h => h.id === dest.nearestHotspotId);
+        if (parent) setSelectedHotspot(parent);
+      }
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-navy-950 text-slate-100">
-      {/* Universal Top Navigation */}
+    <div className="min-h-screen flex flex-col bg-[#080E21] text-slate-100">
+      {/* Universal Top Operational Navbar */}
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        userCredits={userCredits}
+        activeView={activeView}
+        setActiveView={setActiveView}
         activeCircuit={activeCircuit}
         setActiveCircuit={setActiveCircuit}
-        onOpenCreditsModal={() => setActiveTab('credits')}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 pb-16">
-        {/* Hero Section shown on primary view */}
-        {activeTab === 'balancer' && (
-          <HeroSection
-            onExploreBalancer={() => {
-              const el = document.getElementById('balancer-section');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            onExploreHeatmap={() => setActiveTab('heatmap')}
-            onOpenCommandCenter={() => setActiveTab('command')}
-          />
-        )}
+      {/* Main Viewport */}
+      <main className="flex-1 p-3 lg:p-4 max-w-[1920px] w-full mx-auto">
+        {/* Core Operational Layout (60% Map | 20% Digital Twin Insights | 20% Load Balancer & Actions) */}
+        {activeView === 'map-balancer' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-[calc(100vh-100px)] min-h-[680px]">
+            {/* Main Center Area: 60% Map Interface (7.5 of 12 cols in lg grid) */}
+            <div className="lg:col-span-7 xl:col-span-8 h-full flex flex-col space-y-2">
+              <div className="flex-1 h-full min-h-[480px]">
+                <GisMap
+                  destinations={DESTINATIONS}
+                  selectedDestination={inspectedDestination}
+                  onSelectDestination={handleSelectDestinationFromMap}
+                  alternativeDestination={selectedAlternative}
+                  circuit={activeCircuit}
+                  timeOffsetHours={timeOffsetHours}
+                />
+              </div>
 
-        {/* Tab 1: AI Tourism Load Balancer (Primary Demo Engine) */}
-        {activeTab === 'balancer' && (
-          <div id="balancer-section">
-            <LoadBalancer
-              onAcceptRebalance={handleAcceptRebalance}
-              onExploreRural={handleExploreRural}
-              onOpenONDC={handleOpenONDC}
-            />
+              {/* Bottom Time Scrubber Strip */}
+              <div className="gis-panel px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase">
+                    3. Live Heatmap &amp; Forecast:
+                  </span>
+                  <div className="flex items-center space-x-1 font-mono text-[11px]">
+                    {[
+                      { offset: 0, label: 'Live (Now)' },
+                      { offset: 1, label: '+1 Hour' },
+                      { offset: 2, label: '+2 Hours' },
+                      { offset: 3, label: '+3 Hours' },
+                    ].map(t => (
+                      <button
+                        key={t.offset}
+                        onClick={() => setTimeOffsetHours(t.offset)}
+                        className={`px-2.5 py-1 rounded text-xs transition-all ${
+                          timeOffsetHours === t.offset
+                            ? 'bg-[#15803D] text-white font-bold'
+                            : 'bg-[#0A142D] text-slate-400 border border-[#1E2F5B] hover:text-white'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-slate-400 font-mono hidden sm:inline">
+                  Click any marker on the map to inspect carrying capacity &amp; infrastructure telemetry.
+                </div>
+              </div>
+            </div>
+
+            {/* Middle Panel: 20% Digital Tourism Twin Insights (2.5 of 12 cols) */}
+            <div className="lg:col-span-5 xl:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-3 h-full">
+              <div className="h-full">
+                <DigitalTwinPanel
+                  destination={inspectedDestination}
+                  timeOffsetHours={timeOffsetHours}
+                  setTimeOffsetHours={setTimeOffsetHours}
+                  onSetAsHotspotToBalance={handleSelectHotspot}
+                />
+              </div>
+
+              {/* Right Panel: 20% Tourism Load Balancer & Recommendations */}
+              <div className="h-full">
+                <LoadBalancerPanel
+                  hotspots={hotspots}
+                  selectedHotspot={selectedHotspot}
+                  onSelectHotspot={handleSelectHotspot}
+                  alternatives={alternatives.length > 0 ? alternatives : [DESTINATIONS[1]]}
+                  selectedAlternative={selectedAlternative}
+                  onSelectAlternative={setSelectedAlternative}
+                  onOpenRuralDiscovery={() => setActiveView('rural-ondc')}
+                />
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Tab 2: Live Tourism Heatmap */}
-        {activeTab === 'heatmap' && (
-          <TourismHeatmap
-            onSelectDestinationForRebalance={handleSelectFromMap}
-          />
-        )}
-
-        {/* Tab 3: Digital Tourism Twin */}
-        {activeTab === 'digital-twin' && (
-          <DigitalTwin
-            onSelectForRebalance={handleSelectFromMap}
-          />
-        )}
-
-        {/* Tab 4: Rural Discovery Engine (30km Radius) */}
-        {activeTab === 'rural-discovery' && (
+        {/* View 2: 4. Rural Discovery & 5. ONDC Marketplace */}
+        {activeView === 'rural-ondc' && (
           <RuralDiscovery
-            initialHotspotName={selectedHotspotNameForRural}
-            onBookListing={(listing) => {
-              setActiveTab('ondc');
-            }}
+            initialHotspotName={selectedHotspot.name}
+            onBookListing={() => {}}
           />
         )}
 
-        {/* Tab 5: ONDC Commerce Marketplace */}
-        {activeTab === 'ondc' && (
-          <ONDCMarketplace
-            onTransactionComplete={() => {
-              setUserCredits(prev => ({
-                ...prev,
-                balance: prev.balance + 150
-              }));
-            }}
-          />
-        )}
-
-        {/* Tab 6: Voice-Based Rural Host Onboarding */}
-        {activeTab === 'voice-onboard' && (
+        {/* View 3: 6. Voice Host Onboarding */}
+        {activeView === 'voice-onboard' && (
           <VoiceHostOnboarding
             onHostOnboarded={() => {
-              setActiveTab('rural-discovery');
+              setActiveView('rural-ondc');
             }}
           />
         )}
-
-        {/* Tab 7: Tourism Credits System */}
-        {activeTab === 'credits' && (
-          <TourismCredits
-            userCredits={userCredits}
-            onRedeemPerk={handleRedeemPerk}
-          />
-        )}
-
-        {/* Tab 8: Climate & Sustainability Dashboard */}
-        {activeTab === 'sustainability' && (
-          <SustainabilityDashboard />
-        )}
-
-        {/* Tab 9: Tourism Command Center (Admin View) */}
-        {activeTab === 'command' && (
-          <CommandCenter />
-        )}
-
-        {/* Tab 10: 5-Agent Multi-AI System OS */}
-        {activeTab === 'agents' && (
-          <MultiAgentVisualizer />
-        )}
       </main>
-
-      {/* National Hackathon Winner Footer */}
-      <footer className="border-t border-white/10 bg-navy-950 py-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center font-black text-navy-950 text-sm">
-              DD
-            </div>
-            <div>
-              <div className="text-sm font-extrabold text-white">
-                DESHDARSHAN AI &bull; India&apos;s Tourism Operating System
-              </div>
-              <div className="text-xs text-slate-400">
-                &ldquo;DeshDarshan does not recommend destinations. It redistributes tourism.&rdquo;
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 font-mono">
-            <span className="flex items-center text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 mr-1.5" />
-              Beckn Protocol v2.1
-            </span>
-            <span>&bull;</span>
-            <span>Digital Twin Sensor Mesh</span>
-            <span>&bull;</span>
-            <span>5-Agent Multi-AI Pipeline</span>
-            <span>&bull;</span>
-            <span className="text-amber-400 font-semibold">Green Karma Registry</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
