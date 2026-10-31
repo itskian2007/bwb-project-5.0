@@ -77,14 +77,13 @@ export default function GisMap({
           attributionControl: false
         });
 
-        // CartoDB Dark Matter tiles (clean, official GIS look)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-          maxZoom: 16,
-          subdomains: 'abcd',
+        // OpenStreetMap free tile service (100% free, no API key required)
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Add attribution cleanly at bottom
-        L.control.attribution({ position: 'bottomright', prefix: 'Survey of India / OpenStreetMap / Carto' }).addTo(map);
+        L.control.attribution({ position: 'bottomright', prefix: 'OpenStreetMap / Survey GIS' }).addTo(map);
 
         mapInstanceRef.current = map;
         if (isMounted) setIsLeafletReady(true);

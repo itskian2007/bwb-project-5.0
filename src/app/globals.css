@@ -66,6 +66,11 @@ body {
   font-family: inherit;
 }
 
+/* OpenStreetMap Dark GIS Filter - 100% Free, No Watermark, No API Key */
+.leaflet-tile {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
 .leaflet-popup-content-wrapper {
   background: #0E1A38 !important;
   color: #F1F5F9 !important;
