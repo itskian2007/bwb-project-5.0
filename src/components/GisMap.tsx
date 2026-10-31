@@ -32,18 +32,19 @@ export default function GisMap({
   const getCircuitCenter = (c: string): [number, number, number] => {
     switch (c) {
       case 'himachal':
+        return [31.18, 77.28, 10]; // Shimla - Narkanda - Mashobra - Kufri
       case 'manali':
-        return [31.55, 77.25, 9];
+        return [32.00, 77.25, 9]; // Manali - Solang - Tirthan - Jibhi
       case 'uttarakhand':
-        return [30.15, 78.50, 9];
+        return [30.42, 78.18, 10]; // Mussoorie - Kanatal - Garhwal
       case 'south':
       case 'nilgiris':
-        return [11.41, 76.80, 10];
+        return [11.41, 76.75, 11]; // Ooty - Kotagiri
       case 'west':
       case 'goa':
-        return [15.55, 73.80, 10];
+        return [15.55, 73.80, 11]; // North Goa - Morjim
       default:
-        return [31.55, 77.25, 9]; // default Himachal pilot
+        return [31.18, 77.28, 10];
     }
   };
 

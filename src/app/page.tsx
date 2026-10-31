@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Navbar } from '../components/Navbar';
 import { DigitalTwinPanel } from '../components/DigitalTwinPanel';
@@ -38,6 +38,27 @@ export default function Home() {
 
   // Inspected node for the Digital Twin panel (defaults to selected hotspot)
   const [inspectedDestination, setInspectedDestination] = useState<Destination>(selectedHotspot);
+
+  // Automatically update hotspot, inspected node, and alternatives whenever corridor circuit changes
+  useEffect(() => {
+    const circuitHotspot = hotspots.find(h => {
+      if (activeCircuit === 'himachal') return h.id === 'shimla';
+      if (activeCircuit === 'manali') return h.id === 'manali';
+      if (activeCircuit === 'uttarakhand') return h.id === 'mussoorie' || h.circuit.toLowerCase().includes('garhwal');
+      if (activeCircuit === 'nilgiris') return h.id === 'ooty' || h.circuit.toLowerCase().includes('nilgiri');
+      if (activeCircuit === 'goa') return h.id === 'north-goa' || h.id === 'goa' || h.circuit.toLowerCase().includes('goa');
+      return false;
+    }) || hotspots[0];
+
+    if (circuitHotspot) {
+      setSelectedHotspot(circuitHotspot);
+      setInspectedDestination(circuitHotspot);
+      const relatedAlts = DESTINATIONS.filter(d => d.nearestHotspotId === circuitHotspot.id);
+      if (relatedAlts.length > 0) {
+        setSelectedAlternative(relatedAlts[0]);
+      }
+    }
+  }, [activeCircuit]);
 
   // Hotspot change handler
   const handleSelectHotspot = (hotspot: Destination) => {

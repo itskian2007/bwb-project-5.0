@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MapPin, 
   Star, 
@@ -32,6 +32,12 @@ export const RuralDiscovery: React.FC<RuralDiscoveryProps> = ({
   const [selectedHotspot, setSelectedHotspot] = useState<string>(initialHotspotName);
   const [checkoutListing, setCheckoutListing] = useState<RuralListing | null>(null);
   const [isOrdered, setIsOrdered] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (initialHotspotName) {
+      setSelectedHotspot(initialHotspotName);
+    }
+  }, [initialHotspotName]);
 
   const categories = [
     { id: 'all', label: 'All Offerings' },
